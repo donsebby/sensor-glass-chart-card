@@ -87,6 +87,16 @@ rows:
   - entity: sensor.bedroom_temperature
 ```
 
+The look can also come from your theme, for all Liquid Glass cards at once: set
+`lg-look: solid` in the Home Assistant theme (the CSS variable `--lg-look`, value
+`solid` or `glass`). `look:` on a single card overrides the theme; without either the
+card stays glass. The card picks up theme switches on its own.
+
+```yaml
+# in your Home Assistant theme
+lg-look: solid
+```
+
 ## Configuration Reference
 
 | Option | Level | Type | Description |
@@ -96,7 +106,7 @@ rows:
 | `unit` | Card | string | Unit label applied to all rows. If omitted, each row falls back to its own entity's `unit_of_measurement`. |
 | `hours` | Card | number | History window in hours shown on the chart. Default `24`. |
 | `bg_opacity` | Card | number (0–1) | Overrides the glass background opacity. Default matches the rest of the Liquid Glass family (~70%). |
-| `look` | Card | string | `solid` switches to a calm, solid panel without glass, see *Solid look*. Default: glass. |
+| `look` | Card | string | `solid` switches to a calm, solid panel without glass, `glass` forces glass, see *Solid look*. Default: the theme's `lg-look`, otherwise glass. |
 | `rows` | Card | array | The entities to chart (see below). Required, at least one. |
 | `rows[].entity` | Row | string | Entity ID. Required. |
 | `rows[].name` | Row | string | Display name. Falls back to the entity's `friendly_name`. |
@@ -128,6 +138,7 @@ Without them nothing changes. Options set on the card itself (e.g. `blur`) still
 ## Changelog
 
 ### 1.4.0
+- The look can come from the theme: `lg-look: solid` (CSS variable `--lg-look`) switches all Liquid Glass cards to the solid look; `look:` on the card overrides it (see *Solid look*).
 - New card option `look: solid`: a calm, solid panel instead of glass (see *Solid look*). Solid surface from the optional `--surface`, round icon (tinted with the row colour on single-row cards), legend entries as chips with the isolated line's chip tinted, plain min/max pills, larger text (15/13 px). Chart lines and fills are unchanged. Without `look` the card renders exactly as before.
 - The legend is rebuilt when the card config changes, so changed row colours show up without a reload.
 

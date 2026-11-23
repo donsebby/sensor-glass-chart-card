@@ -158,17 +158,10 @@ class SensorGlassChartCard extends HTMLElement {
     this._valueHtml = null;
     this._build();
     // look: solid is opt-in; anything else keeps the glass look untouched.
-    // The legend is rebuilt for the new config (row colours / chip tint).
-    const solid = this._isSolid();
-    this._cardEl.classList.toggle('solid', solid);
-    this._legendItemEls = null;
-    // Solid: a single-row card's icon is info for that one sensor, so it
-    // takes the row colour; with several rows it stays neutral.
-    const tint = solid && config.rows.length === 1 ? this._rowColor(config.rows[0], 0) : null;
-    this._iconBoxEl.classList.toggle('tinted', !!tint);
-    if (tint) this._iconBoxEl.style.setProperty('--c', tint);
-    else this._iconBoxEl.style.removeProperty('--c');
-    if (!this._iconBoxEl.getAttribute('style')) this._iconBoxEl.removeAttribute('style');
+    // `look: solid|glass` in the config wins; otherwise the theme decides
+    // via the CSS variable --lg-look (see _effectiveLook / _checkLook).
+    this._solid = this._effectiveLook(config) === 'solid';
+    this._applyLook();
     if (config.bg_opacity != null && this._cardEl) {
       this._cardEl.style.setProperty('--bg-pct', Math.max(0, Math.min(100, config.bg_opacity * 100)) + '%');
     }
@@ -189,6 +182,15 @@ class SensorGlassChartCard extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
+    // Theme switches arrive via hass.themes - only then re-read --lg-look
+    // (no getComputedStyle on every hass tick).
+    const th = hass && hass.themes;
+    const themeSig = th ? th.theme + '|' + th.darkMode : '';
+    if (th !== this._themesRef || themeSig !== this._themeSig) {
+      this._themesRef = th;
+      this._themeSig = themeSig;
+      this._scheduleLookCheck();
+    }
     // HA calls this on every state change anywhere in the system; only do
     // work when one of this card's own entities actually changed.
     const rows = this._config ? this._config.rows : [];
@@ -206,12 +208,65 @@ class SensorGlassChartCard extends HTMLElement {
   // Stop polling the recorder while the card isn't on screen (e.g. inside a
   // closed popup or another view) and catch up as soon as it returns.
   connectedCallback() {
+    if (!this._onThemeChanged) this._onThemeChanged = () => this._scheduleLookCheck();
+    window.addEventListener('lg-theme-changed', this._onThemeChanged);
+    this._scheduleLookCheck();
     if (this._hass && this._config && this._historyStarted && !this._pollTimer) this._fetchHistory();
   }
 
   disconnectedCallback() {
     clearTimeout(this._pollTimer);
     this._pollTimer = null;
+    if (this._onThemeChanged) window.removeEventListener('lg-theme-changed', this._onThemeChanged);
+    cancelAnimationFrame(this._lookRaf);
+  }
+
+  // Effective look: `look: solid|glass` in the config, else the theme's
+  // --lg-look variable on this element (quotes tolerated), else glass.
+  _effectiveLook(config) {
+    const own = config && config.look;
+    if (own === 'solid' || own === 'glass') return own;
+    let v = '';
+    try { v = getComputedStyle(this).getPropertyValue('--lg-look'); } catch (e) { v = ''; }
+    v = String(v || '').trim().replace(/^["']+|["']+$/g, '').trim().toLowerCase();
+    return v === 'solid' ? 'solid' : 'glass';
+  }
+
+  // Re-read the theme now and once more on the next frame (the theme may
+  // only apply its variables after this element got connected / hass).
+  _scheduleLookCheck() {
+    this._checkLook();
+    cancelAnimationFrame(this._lookRaf);
+    this._lookRaf = requestAnimationFrame(() => this._checkLook());
+  }
+
+  _checkLook() {
+    const c = this._config;
+    if (!c || c.look === 'solid' || c.look === 'glass' || !this._cardEl) return;
+    const solid = this._effectiveLook(c) === 'solid';
+    if (solid === this._solid) return;
+    // Same result as setConfig() with the same config, minus the history
+    // re-fetch (the chart itself doesn't depend on the look).
+    this._solid = solid;
+    this._applyLook();
+    this._renderValue();
+    if (this._legendItemEls) this._setActive(this._activeIndex);
+  }
+
+  // Everything in the DOM that depends on the look.
+  _applyLook() {
+    const config = this._config;
+    const solid = this._isSolid();
+    this._cardEl.classList.toggle('solid', solid);
+    // The legend is rebuilt for the new config (row colours / chip tint).
+    this._legendItemEls = null;
+    // Solid: a single-row card's icon is info for that one sensor, so it
+    // takes the row colour; with several rows it stays neutral.
+    const tint = solid && config.rows.length === 1 ? this._rowColor(config.rows[0], 0) : null;
+    this._iconBoxEl.classList.toggle('tinted', !!tint);
+    if (tint) this._iconBoxEl.style.setProperty('--c', tint);
+    else this._iconBoxEl.style.removeProperty('--c');
+    if (!this._iconBoxEl.getAttribute('style')) this._iconBoxEl.removeAttribute('style');
   }
 
   _noDataHtml() {
@@ -221,7 +276,7 @@ class SensorGlassChartCard extends HTMLElement {
 
   getCardSize() { return 4; }
 
-  _isSolid() { return !!this._config && this._config.look === 'solid'; }
+  _isSolid() { return !!this._config && !!this._solid; }
 
   static getStubConfig() {
     return {
