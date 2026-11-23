@@ -1,4 +1,4 @@
-const CARD_VERSION = '1.3.1';
+const CARD_VERSION = '1.4.0';
 // eslint-disable-next-line no-console
 console.info(
   `%c SENSOR-GLASS-CHART-CARD %c v${CARD_VERSION} `,
@@ -51,6 +51,43 @@ const STYLE = `
     opacity: 0; transition: opacity .18s ease; z-index: 2; }
   .extrema-pill.visible { opacity: 1; }
   .empty { font-size:12px; color: ${SECOND}; text-align:center; padding:20px 18px; }
+
+  /* look: solid - a calm, solid panel instead of glass (opt-in, see
+     setConfig). No blur, gradients, chromatic inner edges or shadows on
+     the panel, icon or pills; legend entries become quiet chips, the one
+     isolated line's chip is tinted with its colour. The chart itself
+     (lines, flat area fills, full-bleed layout) is data and stays as is.
+     Kept last so these rules win over the glass rules above. */
+  .card.solid { background: var(--surface, color-mix(in srgb, var(--card-background-color, #1c1f28) 88%, transparent));
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+    border: 1px solid rgba(255,255,255,0.06); border-radius: var(--lg-radius, 20px);
+    padding-top: 16px; box-shadow: none; }
+  .card.solid .head, .card.solid .value, .card.solid .legend { padding: 0 16px; }
+  .card.solid .head { align-items: center; }
+  .card.solid .title { font-size:15px; font-weight:600; opacity:1; letter-spacing:0; }
+  .card.solid .icon-box { width:36px; height:36px; border-radius:50%; border:none; box-shadow:none;
+    background: color-mix(in srgb, ${INK} 10%, transparent); color: ${SECOND}; }
+  .card.solid .icon-box.tinted { background: color-mix(in srgb, var(--c) 20%, transparent); color: var(--c); }
+  .card.solid .icon-box:empty { display:none; }
+  .card.solid .value { font-variant-numeric: tabular-nums; }
+  .card.solid .legend { gap:8px; margin-top:12px; }
+  .card.solid .legend .item { position:relative; gap:8px; min-height:36px; box-sizing:border-box; padding:0 12px;
+    background: var(--lg-tile-bg, color-mix(in srgb, ${INK} 8%, transparent));
+    border: 1px solid rgba(255,255,255,0.04); border-radius: calc(var(--lg-radius, 20px) - 4px);
+    transition: opacity .2s ease, background .2s ease; }
+  /* 36px chips, 44px tap targets: the 8px gaps between wrapped rows
+     are split between the chips above and below */
+  .card.solid .legend .item::before { content:""; position:absolute; left:0; right:0; top:-4px; bottom:-4px; }
+  .card.solid .legend .item.selected { background: color-mix(in srgb, var(--c) 20%, var(--lg-tile-bg, color-mix(in srgb, ${INK} 8%, transparent))); }
+  .card.solid .legend .name, .card.solid .legend .val { font-size:13px; }
+  .card.solid .legend .val { font-variant-numeric: tabular-nums; }
+  .card.solid .extrema-pill { background: var(--surface, color-mix(in srgb, var(--card-background-color, #1c1f28) 88%, transparent));
+    backdrop-filter:none; -webkit-backdrop-filter:none; border: 1px solid rgba(255,255,255,0.08);
+    box-shadow:none; padding: 3px 10px; font-size:12px; font-weight:600; font-variant-numeric: tabular-nums; }
+  .card.solid .empty { font-size:13px; padding:20px 16px; }
+  @media (prefers-reduced-motion: reduce) {
+    .card.solid .legend .item, .card.solid .chart svg path, .card.solid .extrema-pill { transition:none; }
+  }
 `;
 
 function smoothPath(points) {
@@ -120,6 +157,18 @@ class SensorGlassChartCard extends HTMLElement {
     this._lastStates = null;
     this._valueHtml = null;
     this._build();
+    // look: solid is opt-in; anything else keeps the glass look untouched.
+    // The legend is rebuilt for the new config (row colours / chip tint).
+    const solid = this._isSolid();
+    this._cardEl.classList.toggle('solid', solid);
+    this._legendItemEls = null;
+    // Solid: a single-row card's icon is info for that one sensor, so it
+    // takes the row colour; with several rows it stays neutral.
+    const tint = solid && config.rows.length === 1 ? this._rowColor(config.rows[0], 0) : null;
+    this._iconBoxEl.classList.toggle('tinted', !!tint);
+    if (tint) this._iconBoxEl.style.setProperty('--c', tint);
+    else this._iconBoxEl.style.removeProperty('--c');
+    if (!this._iconBoxEl.getAttribute('style')) this._iconBoxEl.removeAttribute('style');
     if (config.bg_opacity != null && this._cardEl) {
       this._cardEl.style.setProperty('--bg-pct', Math.max(0, Math.min(100, config.bg_opacity * 100)) + '%');
     }
@@ -171,6 +220,8 @@ class SensorGlassChartCard extends HTMLElement {
   }
 
   getCardSize() { return 4; }
+
+  _isSolid() { return !!this._config && this._config.look === 'solid'; }
 
   static getStubConfig() {
     return {
@@ -267,6 +318,8 @@ class SensorGlassChartCard extends HTMLElement {
       this._legendEl.querySelectorAll('.item').forEach((item) => {
         const match = idx === null || Number(item.dataset.index) === idx;
         item.style.opacity = match ? '' : '0.4';
+        // Solid: the isolated line's chip is tinted with its colour.
+        if (this._isSolid()) item.classList.toggle('selected', idx !== null && match);
       });
     }
     this._updateExtrema();
@@ -314,8 +367,9 @@ class SensorGlassChartCard extends HTMLElement {
   // sync with unrelated HA traffic instead of actual mouse movement.
   _buildLegend() {
     const rows = this._config.rows;
+    const solid = this._isSolid();
     this._legendEl.innerHTML = rows.map((row, i) => `
-      <div class="item" data-index="${i}">
+      <div class="item" data-index="${i}"${solid ? ` style="--c:${this._rowColor(row, i)}"` : ''}>
         <div class="dot" style="background:${this._rowColor(row, i)}"></div>
         <div class="name"></div>
         <div class="val"></div>

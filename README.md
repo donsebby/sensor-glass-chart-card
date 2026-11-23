@@ -60,6 +60,33 @@ rows:
 
 With exactly one row, the legend is hidden and replaced with a large current-value display, and the min/max pills are shown permanently.
 
+### Solid look
+
+`look: solid` swaps the glass for a calm, solid panel, matching `look: solid` in
+`liquid-glass-tile-card-v2`:
+
+- **Panel:** solid surface from the optional CSS variable `--surface` (default: the
+  theme's card background at 88 %), a hairline border, no blur and no shadow.
+  `bg_opacity` has no effect in this look.
+- **Icon:** a plain round icon – neutral with several rows, tinted with the row
+  colour for a single-row card. No icon is shown when `icon` is omitted.
+- **Legend:** each entry is a quiet chip (`--lg-tile-bg`); the chip of the line
+  isolated by hover/tap is tinted with its colour.
+- **Chart:** lines, their colours and the light area fills stay as they are; the
+  min/max pills become plain solid pills.
+- Text: title 15 px, legend 13 px, numbers with tabular figures. Transitions are
+  switched off for `prefers-reduced-motion`.
+
+```yaml
+type: custom:sensor-glass-chart-card
+title: Temperatures
+icon: temperature
+look: solid
+rows:
+  - entity: sensor.living_room_temperature
+  - entity: sensor.bedroom_temperature
+```
+
 ## Configuration Reference
 
 | Option | Level | Type | Description |
@@ -69,6 +96,7 @@ With exactly one row, the legend is hidden and replaced with a large current-val
 | `unit` | Card | string | Unit label applied to all rows. If omitted, each row falls back to its own entity's `unit_of_measurement`. |
 | `hours` | Card | number | History window in hours shown on the chart. Default `24`. |
 | `bg_opacity` | Card | number (0–1) | Overrides the glass background opacity. Default matches the rest of the Liquid Glass family (~70%). |
+| `look` | Card | string | `solid` switches to a calm, solid panel without glass, see *Solid look*. Default: glass. |
 | `rows` | Card | array | The entities to chart (see below). Required, at least one. |
 | `rows[].entity` | Row | string | Entity ID. Required. |
 | `rows[].name` | Row | string | Display name. Falls back to the entity's `friendly_name`. |
@@ -98,6 +126,10 @@ lg-backdrop: blur(22px) saturate(180%)   # blur/saturation behind the panel
 Without them nothing changes. Options set on the card itself (e.g. `blur`) still win.
 
 ## Changelog
+
+### 1.4.0
+- New card option `look: solid`: a calm, solid panel instead of glass (see *Solid look*). Solid surface from the optional `--surface`, round icon (tinted with the row colour on single-row cards), legend entries as chips with the isolated line's chip tinted, plain min/max pills, larger text (15/13 px). Chart lines and fills are unchanged. Without `look` the card renders exactly as before.
+- The legend is rebuilt when the card config changes, so changed row colours show up without a reload.
 
 ### 1.3.1
 - Reads the optional theme variables `--lg-radius` and `--lg-backdrop` (see *Theme variables*).
