@@ -18,9 +18,9 @@ const DEFAULT_COLORS = ['#a78bfa', '#d9b45c', '#5ec6c2', '#7bbf6a', '#5ea8d9', '
 const STYLE = `
   :host { display:block; font-family: var(--paper-font-body1_-_font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif); }
   .card { background: color-mix(in oklch, var(--card-background-color, #17181f) var(--bg-pct, 70%), transparent);
-    backdrop-filter: blur(22px) saturate(180%); -webkit-backdrop-filter: blur(22px) saturate(180%);
-    border: 1px solid color-mix(in srgb, ${INK} 12%, transparent); border-radius: 20px;
-    padding: 18px 0 0 0; box-sizing: border-box; overflow: hidden; clip-path: inset(0 round 20px);
+    backdrop-filter: var(--lg-backdrop, blur(22px) saturate(180%)); -webkit-backdrop-filter: var(--lg-backdrop, blur(22px) saturate(180%));
+    border: 1px solid color-mix(in srgb, ${INK} 12%, transparent); border-radius: var(--lg-radius, 20px);
+    padding: 18px 0 0 0; box-sizing: border-box; overflow: hidden; clip-path: inset(0 round var(--lg-radius, 20px));
     box-shadow: 0 20px 40px -20px rgba(0,0,0,0.35), inset 0 1px 0 color-mix(in srgb, ${INK} 10%, transparent); }
   .head { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:12px; padding: 0 18px; }
   .title { font-size:14px; font-weight:600; color: ${INK}; opacity:0.85; letter-spacing:0.01em; }

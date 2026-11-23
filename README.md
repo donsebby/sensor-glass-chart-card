@@ -85,9 +85,22 @@ With exactly one row, the legend is hidden and replaced with a large current-val
 
 MIT
 
+## Theme variables
+
+Like the other Liquid Glass cards, this card reads two optional CSS variables, so one theme can align all of them:
+
+```yaml
+# in your Home Assistant theme
+lg-radius: 22px                          # corner radius of the glass panel
+lg-backdrop: blur(22px) saturate(180%)   # blur/saturation behind the panel
+```
+
+Without them nothing changes. Options set on the card itself (e.g. `blur`) still win.
+
 ## Changelog
 
 ### 1.3.1
+- Reads the optional theme variables `--lg-radius` and `--lg-backdrop` (see *Theme variables*).
 - Only re-renders when one of the card's own entities changes, instead of on every state change in Home Assistant.
 - Stops polling the history API while the card is not on screen (closed popup, other view) and refreshes when it comes back.
 - "No history available" message follows the Home Assistant language.
