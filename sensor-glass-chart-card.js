@@ -1,4 +1,4 @@
-const CARD_VERSION = '1.3.0';
+const CARD_VERSION = '1.3.1';
 // eslint-disable-next-line no-console
 console.info(
   `%c SENSOR-GLASS-CHART-CARD %c v${CARD_VERSION} `,
@@ -117,6 +117,8 @@ class SensorGlassChartCard extends HTMLElement {
       throw new Error('sensor-glass-chart-card: "rows" (array of {entity, name, color}) is required.');
     }
     this._config = config;
+    this._lastStates = null;
+    this._valueHtml = null;
     this._build();
     if (config.bg_opacity != null && this._cardEl) {
       this._cardEl.style.setProperty('--bg-pct', Math.max(0, Math.min(100, config.bg_opacity * 100)) + '%');
@@ -138,11 +140,34 @@ class SensorGlassChartCard extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
-    this._renderValue();
+    // HA calls this on every state change anywhere in the system; only do
+    // work when one of this card's own entities actually changed.
+    const rows = this._config ? this._config.rows : [];
+    const changed = !this._lastStates || rows.some((r, i) => hass.states[r.entity] !== this._lastStates[i]);
+    if (changed) {
+      this._lastStates = rows.map((r) => hass.states[r.entity]);
+      this._renderValue();
+    }
     if (!this._historyStarted) {
       this._historyStarted = true;
       this._fetchHistory();
     }
+  }
+
+  // Stop polling the recorder while the card isn't on screen (e.g. inside a
+  // closed popup or another view) and catch up as soon as it returns.
+  connectedCallback() {
+    if (this._hass && this._config && this._historyStarted && !this._pollTimer) this._fetchHistory();
+  }
+
+  disconnectedCallback() {
+    clearTimeout(this._pollTimer);
+    this._pollTimer = null;
+  }
+
+  _noDataHtml() {
+    const lang = String((this._hass && ((this._hass.locale && this._hass.locale.language) || this._hass.language)) || 'en');
+    return `<div class="empty">${lang.startsWith('de') ? 'Keine Verlaufsdaten verf\u00fcgbar' : 'No history available'}</div>`;
   }
 
   getCardSize() { return 4; }
@@ -338,7 +363,11 @@ class SensorGlassChartCard extends HTMLElement {
       const unit = cardUnit || state?.attributes?.unit_of_measurement || '';
       const val = parseFloat(state?.state);
       this._valueEl.classList.remove('hidden');
-      this._valueEl.innerHTML = `${fmtVal(val, unit)}<span class="unit">${unit}</span>`;
+      const html = `${fmtVal(val, unit)}<span class="unit">${unit}</span>`;
+      if (this._valueHtml !== html) {
+        this._valueHtml = html;
+        this._valueEl.innerHTML = html;
+      }
       this._legendEl.classList.add('hidden');
     } else {
       this._valueEl.classList.add('hidden');
@@ -363,14 +392,14 @@ class SensorGlassChartCard extends HTMLElement {
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error('sensor-glass-chart-card: history fetch failed', err);
-      this._chartEl.innerHTML = '<div class="empty">Keine Verlaufsdaten verfügbar</div>';
+      this._chartEl.innerHTML = this._noDataHtml();
     } finally {
       this._fetching = false;
       this._renderValue();
       // Home Assistant history isn't push-updated - a light poll keeps
       // the curve current without hammering the recorder API.
       clearTimeout(this._pollTimer);
-      this._pollTimer = setTimeout(() => this._fetchHistory(), 5 * 60 * 1000);
+      this._pollTimer = this.isConnected ? setTimeout(() => this._fetchHistory(), 5 * 60 * 1000) : null;
     }
   }
 
@@ -421,7 +450,7 @@ class SensorGlassChartCard extends HTMLElement {
     });
 
     if (!anySeries) {
-      this._chartEl.innerHTML = '<div class="empty">Keine Verlaufsdaten verfügbar</div>';
+      this._chartEl.innerHTML = this._noDataHtml();
       return;
     }
 

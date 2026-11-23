@@ -2,7 +2,7 @@
 
 A frosted-glass multi-entity line chart for Home Assistant Lovelace, styled to match the [Liquid Glass](https://community.home-assistant.io/t/liquid-glass-tile-card-an-ios-26-liquid-glass-tile-card-for-your-dashboard/1016733) card family (`liquid-glass-tile-card`, `liquid-lens-navbar-card`). Built as a drop-in glass-styled alternative to `mini-graph-card` for multi-room/multi-entity history graphs (temperature, humidity, power, battery, etc.).
 
-![screenshot placeholder](screenshot.png)
+![Sensor Glass Chart Card: multi-room temperatures and a single-value solar chart](asset/sensor-glass-chart-card.png)
 
 ## Features
 
@@ -84,3 +84,10 @@ With exactly one row, the legend is hidden and replaced with a large current-val
 ## License
 
 MIT
+
+## Changelog
+
+### 1.3.1
+- Only re-renders when one of the card's own entities changes, instead of on every state change in Home Assistant.
+- Stops polling the history API while the card is not on screen (closed popup, other view) and refreshes when it comes back.
+- "No history available" message follows the Home Assistant language.
