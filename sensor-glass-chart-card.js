@@ -59,9 +59,9 @@ const STYLE = `
      (lines, flat area fills, full-bleed layout) is data and stays as is.
      Kept last so these rules win over the glass rules above. */
   .card.solid { background: var(--surface, color-mix(in srgb, var(--card-background-color, #1c1f28) 88%, transparent));
-    backdrop-filter: none; -webkit-backdrop-filter: none;
-    border: 1px solid rgba(255,255,255,0.06); border-radius: var(--lg-radius, 20px);
-    padding-top: 16px; box-shadow: none; }
+    backdrop-filter: var(--lg-panel-backdrop, none); -webkit-backdrop-filter: var(--lg-panel-backdrop, none);
+    border: var(--lg-tile-edge, 1px solid rgba(255,255,255,0.06)); border-radius: var(--lg-radius, 20px);
+    padding-top: 16px; box-shadow: var(--lg-tile-shadow, none); }
   .card.solid .head, .card.solid .value, .card.solid .legend { padding: 0 16px; }
   .card.solid .head { align-items: center; }
   .card.solid .title { font-size:15px; font-weight:600; opacity:1; letter-spacing:0; }
