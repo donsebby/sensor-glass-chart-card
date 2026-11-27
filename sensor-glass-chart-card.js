@@ -1,4 +1,4 @@
-const CARD_VERSION = '1.4.0';
+const CARD_VERSION = '1.5.0';
 // eslint-disable-next-line no-console
 console.info(
   `%c SENSOR-GLASS-CHART-CARD %c v${CARD_VERSION} `,
