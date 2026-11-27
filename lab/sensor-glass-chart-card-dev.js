@@ -73,7 +73,7 @@ const STYLE = `
   .card.solid .legend { gap:8px; margin-top:12px; }
   .card.solid .legend .item { position:relative; gap:8px; min-height:36px; box-sizing:border-box; padding:0 12px;
     background: var(--lg-tile-bg, color-mix(in srgb, ${INK} 8%, transparent));
-    border: 1px solid rgba(255,255,255,0.04); border-radius: calc(var(--lg-radius, 20px) - 4px);
+    border: var(--lg-tile-edge, 1px solid rgba(255,255,255,0.04)); box-shadow: var(--lg-tile-shadow, none); border-radius: calc(var(--lg-radius, 20px) - 4px);
     transition: opacity .2s ease, background .2s ease; }
   /* 36px chips, 44px tap targets: the 8px gaps between wrapped rows
      are split between the chips above and below */
